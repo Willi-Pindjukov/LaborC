@@ -9,7 +9,9 @@
 #define VALUEMIDDLE 500;
 #define VALUELEFT 500;
 
-typedef enum State {right, left, middle} State;
+typedef enum State {right, left, middle, middleright, middleleft} State;
+
+
 
 void drivemiddle(State* state){
 	setDutyCycle(PD5, 100);
@@ -34,12 +36,6 @@ void driveleft(State* state){
 	PORTD &= ~(1 << PD7);
 	*state = left;
 	}
-
-void stopmotors(State* state){
-    PORTB &= ~(1 << PB3);
-    PORTD &= ~(1 << PD7);
-    *state = left;
-}
 
 
 int main(void) {
@@ -77,7 +73,6 @@ int main(void) {
 	char middle;
 	char left;
 
-
 		USART_init(UBRR_SETTING);
 
 		DR_ADC0 &= ~(1 << DP_ADC0);
@@ -87,6 +82,10 @@ int main(void) {
 		ADC_init();
 
 		unsigned char strbuff[sizeof(ADCMSG) + 15]; // WTF, why + 15? Oo
+
+		// Just to make things clear: You have to be extremely careful with
+		// the size of the stringbuffer. Better safe than sorry! But memory
+		// as well as time are so so so precious!
 
 		uint16_t adcval0 = 0;
 		uint16_t adcval1 = 0;
@@ -104,13 +103,7 @@ int main(void) {
 			middle = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW) > VALUEMIDDLE;
 			left = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW) > VALUELEFT;
 
-			if(right && middle && left){
-                stopmotors(&CurrentState);
-			}else if(middle && left){
-                driveleft(&CurrentState);
-			}else if(middle && right){
-                driveright(&CurrentState);
-			}else if(middle){
+			if(middle){
 				drivemiddle(&CurrentState);
 			}else if(right){
 				driveright(&CurrentState);
@@ -124,10 +117,13 @@ int main(void) {
 				driveleft(&CurrentState);
 			}
 
+
 			sprintf(strbuff, ADCMSG, adcval0, adcval1, adcval2);
 
 			USART_print(strbuff);
 		}
+
+
 
 		_delay_ms(1000);
 
