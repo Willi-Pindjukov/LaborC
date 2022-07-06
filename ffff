@@ -6,8 +6,18 @@
 #include "iesadc.h"
 #include "followLine.h"
 
-typedef enum State {right, left, middle, lowleft, lowmiddle, lowright} State;
+typedef enum State {SOFTLEFT, SOFTRIGHT, FORWARD, LEFT, RIGHT} State;
 
+enum LEFT_MOTOR_PINS {
+	ENA = PD5,
+	IN1 = PD7,
+	IN2 = PB0
+};
+enum RIGHT_MOTOR_PINS {
+	ENB = PD6,
+	IN3 = PB1,
+	IN4 = PB3
+};
 
 // left motor forward:  PORTD |= (1 << PD7);
 // left motor backward: PORTB |= (1 << PB0);
@@ -17,64 +27,59 @@ typedef enum State {right, left, middle, lowleft, lowmiddle, lowright} State;
 
 
 void setDutyCicle(char left, char right){
-	 setDutyCycle(PD6, left);
-	 setDutyCycle(PD5, right);
+	 setDutyCycle(ENA, left);
+	 setDutyCycle(ENB, right);
 	}
 
 void leftforward(){
-	PORTD |= (1 << PD7);
-	PORTB &= ~(1 << PB0);
+	PORTD |= (1 << IN1);
+	PORTB &= ~(1 << IN2);
 	}
 
 void leftbackward(){
-	PORTD &= ~(1 << PD7);
-	PORTB |= (1 << PB0);
+	PORTD &= ~(1 << IN1);
+	PORTB |= (1 << IN2);
 	}
 
 void rightforward(){
-	PORTB |= (1 << PB1);
-	PORTB &= ~(1 << PB3);
+	PORTB &= ~(1 << IN3);
+	PORTB |= (1 << IN4);
 	}
 
 void rightbackward(){
-	PORTB &= ~(1 << PB1);
-	PORTB |= (1 << PB3);
+	PORTB |= (1 << IN3);
+	PORTB &= ~(1 << IN4);
 	}
 
 
-void drivemiddle(State* state){
+void drivemiddle(){
 	setDutyCicle(100,100);
 	leftforward();
 	rightforward();
-	*state = middle;
 	}
 
-void driveright(State* state){
-	setDutyCicle(200,130);
+void driveright(){
+	setDutyCicle(240,180);
     leftforward();
 	rightbackward();
-	*state = right;
 	}
 
-void drivelowright(State* state){
-	setDutyCicle(150,100);
+void drivelowright(){
+	setDutyCicle(200,160);
 	leftforward();
-	rightforward();
-	*state = right;
+	rightbackward();
 	}
 
-void driveleft(State* state){
-	setDutyCicle(130,200);
+void driveleft(){
+	setDutyCicle(180,240);
 	rightforward();
 	leftbackward();
-	*state = left;
 	}
 	
-void drivelowleft(State* state){
-	setDutyCicle(100,150);
+void drivelowleft(){
+	setDutyCicle(160,200);
 	rightforward();
-	leftforward();
-	*state = left;
+	leftbackward();
 	}
 
 
@@ -131,12 +136,15 @@ int main(void) {
 	uint16_t adcval1 = 0;
 	uint16_t adcval2 = 0;
 
-	State CurrentState;
+	State CurrentState = FORWARD;
 	
 	//LED------
 	// Set Data Direction Register B5 as output.
     //DDRB = (1<<DDB5);
     
+    char right_on_line;
+	char middle_on_line;
+	char left_on_line;
 	
 	while(1) {
 		// Set pin/bit 5 to high (VCC) and wait half a sec.
@@ -147,54 +155,75 @@ int main(void) {
         //PORTB &= ~(1<<PORTB5);
         //_delay_ms(500);
         
-        
-        
-        
-        
+  
 		adcval0 = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW);
 		adcval1 = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW);
 		adcval2 = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW);
 
-		right = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW) > VALUERIGHT;
-		middle = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW) > VALUEMIDDLE;
-		left = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW) > VALUELEFT;
+		right_on_line = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW) > VALUERIGHT;
+		middle_on_line = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW) > VALUEMIDDLE;
+		left_on_line = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW) > VALUELEFT;
 		
-		
-		//lowright = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW) > VALUE400;
-		//lowmiddle = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW) > VALUE400;
-		//lowleft = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW) > VALUE400;
-		
-		
-		//if(right && middle && left){
-		//	//USART_print("0 \n");
-		//	stopmotors(&CurrentState);
-		//}else 
-		if(middle && left){
+		/*if(middle && left){
 			//USART_print("1 \n");
 			driveleft(&CurrentState);
 		}else if(middle && right){
 			//USART_print("2 \n");
 			driveright(&CurrentState);
-		}else if(right){
-			//USART_print("4 \n");
-			drivelowright(&CurrentState);
-		}else if(left){
-			//USART_print("5 \n");
-			drivelowleft(&CurrentState);
-		}else if(middle){
-			//USART_print("3 \n");
-			drivemiddle(&CurrentState);
-		}else if(CurrentState == middle){
-			//USART_print("6 \n");
-			drivemiddle(&CurrentState);
-		}else if(CurrentState == right){
-			//USART_print("7 \n");
-			driveright(&CurrentState);
-		}else if(CurrentState == left){
-			//USART_print("8 \n");
-			driveleft(&CurrentState);
-		}
-
+		}else*/ 
+		
+		switch(CurrentState){
+			case FORWARD: 
+				drivemiddle(&CurrentState);
+				if(right_on_line){
+				//USART_print("4 \n");
+					CurrentState = SOFTRIGHT;
+					USART_print("SOFTRIGHT \n");
+				}else if(left_on_line){
+					//USART_print("5 \n");
+					CurrentState = SOFTLEFT;
+					USART_print("SOFTLEFT \n");
+				}
+				break;
+				
+			case SOFTLEFT:
+				drivelowleft();
+				if(!left_on_line && middle_on_line){
+					CurrentState = FORWARD;
+					USART_print("FORWARD \n");
+				}else if(!middle_on_line && !left_on_line){
+					CurrentState = LEFT;
+					USART_print("LEFT \n");
+					}
+				break;
+				
+			case SOFTRIGHT:
+				drivelowright();
+				if(!right_on_line && middle_on_line){
+					CurrentState = FORWARD;
+						USART_print("FORWARD \n");
+				}else if(!middle_on_line && !right_on_line){
+					CurrentState = RIGHT;
+					USART_print("RIGHT \n");
+					}
+				break;
+				
+			case LEFT:
+				driveleft();
+				if(!left_on_line && middle_on_line){
+					CurrentState = FORWARD;
+					USART_print("FORWARD \n");
+				}
+				break;
+				
+			case RIGHT:
+				driveright();
+				if(!right_on_line && middle_on_line){
+					CurrentState = FORWARD;
+					USART_print("FORWARD \n");
+				}
+				break;
+			}
 		
 		//sprintf(strbuff, ADCMSG, adcval0, adcval1, adcval2);
 
