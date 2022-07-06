@@ -1,6 +1,6 @@
 #!/bin/bash
-echo avr-gcc $1 $2 $3 $4 -o tmpfile -mmcu=atmega328p -Os -D F_CPU=16E6
-avr-gcc $1 $2 $3 $4 -o tmpfile -mmcu=atmega328p -Os -D F_CPU=16E6
+echo avr-gcc $1 $2 $3 $4 $5 $6 $7-o tmpfile -mmcu=atmega328p -Os -D F_CPU=16E6
+avr-gcc $1 $2 $3 $4 $5 $6 $7-o tmpfile -mmcu=atmega328p -Os -D F_CPU=16E6
 
 echo avr-objcopy -O ihex tmpfile tmpfile.hex
 avr-objcopy -O ihex tmpfile tmpfile.hex

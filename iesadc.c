@@ -9,6 +9,10 @@
  * done in this method, the MUX is used in the read-function.
  */
 void ADC_init(void) {
+	
+	DR_ADC0 &= ~(1 << DP_ADC0);
+	DR_ADC1 &= ~(1 << DP_ADC1);
+	DR_ADC2 &= ~(1 << DP_ADC2);
   // The following lines still let the digital input registers enabled,
   // though that's not a good idea (energy-consumption).
 

@@ -2,46 +2,9 @@
 #include <util/delay.h>
 #include <stdlib.h>
 #include "iesusart.h"
+#include "iessreg.h"
 
-// Robot function/peripheral RIGHT LF.
-#define DR_LF_R DDRC
-#define DP_LF_R DDC0
-#define IR_LF_R PINC
-#define IP_LF_R PINC0
 
-// Robot function/peripheral MIDDLE LF.
-#define DR_LF_M DDRC
-#define DP_LF_M DDC1
-#define IR_LF_M PINC
-#define IP_LF_M PINC1
-
-// Robot function/peripheral LEFT LF.
-#define DR_LF_L DDRC
-#define DP_LF_L DDC2
-#define IR_LF_L PINC
-#define IP_LF_L PINC2
-
-// Robot funktion/peripheral SR
-#define REGWIDTH 3
-
-// SR clock
-#define DR_SR_CLK  DDRD
-#define DP_SR_CLK  DDD4
-#define OR_SR_CLK  PORTD
-#define OP_SR_CLK  PORTD4
-
-// SR data
-#define DR_SR_DATA DDRB
-#define DP_SR_DATA DDB2
-#define OR_SR_DATA PORTB
-#define OP_SR_DATA PORTB2
-
-#define SR_LED_YELLOW 2
-#define SR_LED_GREEN  1
-#define SR_LED_BLUE   0
-
-typedef unsigned char srr_t;
-typedef unsigned char cntv8_t;
 
 /**
   Clocks the real hardware -- whenever this is called,
@@ -66,16 +29,17 @@ void update_hardware(srr_t *regmdl) {
            OR_SR_DATA |= (1 << OP_SR_DATA);
            switch (position_set) {
               case (1 << SR_LED_BLUE):
-                 USART_print("LEFT LED SET/LD FIRES!\n\n");
+                 //USART_print("LEFT LED SET/LD FIRES!\n\n");
                  break;
               case (1 << SR_LED_GREEN):
-                 USART_print("MIDDLE LED SET/LF FIRES!\n\n");
+                 //USART_print("MIDDLE LED SET/LF FIRES!\n\n");
                  break;
               case (1 << SR_LED_YELLOW):
-                 USART_print("RIGHT LED SET/LF FIRES!\n\n");
+                 //USART_print("RIGHT LED SET/LF FIRES!\n\n");
                  break;
               default:
-                 USART_print("NO OR MULTIPLE LFs FIRE!\n\n");
+				 break;
+                 //USART_print("NO OR MULTIPLE LFs FIRE!\n\n");
            }
         } else {
            OR_SR_DATA &= ~(1 << OP_SR_DATA);
@@ -88,21 +52,21 @@ void update_hardware(srr_t *regmdl) {
   Updates the model (memory), that represents the
   robot's shift-register.
 */
-void update_model(srr_t *regmdl) {
+void update_model(srr_t *regmdl, char left, char middle, char right) {
 
-    if (IR_LF_R & (1 << IP_LF_R)) {
+    if (right) {
         *regmdl |= (1 << SR_LED_YELLOW);
     } else {
         *regmdl &= ~(1 << SR_LED_YELLOW);
     }
 
-    if (IR_LF_M & (1 << IP_LF_M)) {
+    if (middle) {
         *regmdl |= (1 << SR_LED_GREEN);
     } else {
         *regmdl &= ~(1 << SR_LED_GREEN);
     }
 
-    if (IR_LF_L & (1 << IP_LF_L)) {
+    if (left) {
         *regmdl |= (1 << SR_LED_BLUE);
     } else {
         *regmdl &= ~(1 << SR_LED_BLUE);
@@ -137,7 +101,7 @@ void setup_ddr_all() {
     DR_LF_M &= ~(1 << DP_LF_M);
 }
 
-int main(void) {
+/*int main(void) {
     // Setup everything
     setup_ddr_all();
     USART_init(UBRR_SETTING);
@@ -162,4 +126,4 @@ int main(void) {
     }
 
     return 0;
-}
+}*/
