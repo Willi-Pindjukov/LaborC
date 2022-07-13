@@ -7,6 +7,8 @@
 #include "iesadc.h"
 #include "followLine.h"
 #include "iessreg.h"
+#include "iesultrasound.h"
+#include <avr/interrupt.h>
 
 typedef enum State {SOFTLEFT, SOFTRIGHT, FORWARD, LEFT, RIGHT} State;
 
@@ -55,6 +57,12 @@ void rightbackward(){
 	PORTB &= ~(1 << IN4);
 	}
 
+void stopmotors(){
+	PORTD &= ~(1 << IN1);
+	PORTB &= ~(1 << IN2);
+	PORTB &= ~(1 << IN3);
+	PORTB &= ~(1 << IN4);
+	}
 
 // drive directions
 void drivemiddle(){
@@ -64,28 +72,40 @@ void drivemiddle(){
 	}
 
 void driveright(){
-	setDutyCicle(180,140);
+	setDutyCicle(220,180);
     leftforward();
 	rightbackward();
 	}
 
 void drivelowright(){
-	setDutyCicle(160,120);
+	setDutyCicle(150,130);
 	leftforward();
 	rightforward();
 	}
 
 void driveleft(){
-	setDutyCicle(140,180);
+	setDutyCicle(180,220);
 	rightforward();
 	leftbackward();
 	}
 	
 void drivelowleft(){
-	setDutyCicle(120,160);
+	setDutyCicle(130,150);
 	rightforward();
 	leftforward();
 	}
+
+
+
+ISR (TIMER1_COMPA_vect) {
+	
+	if(cnt == 49){
+		time_elapse = 1;
+		cnt = 0;
+		}
+	cnt+=1;
+}
+
 
 int main(void) {
 
@@ -97,29 +117,15 @@ int main(void) {
 	
 	setup_ddr_all();
 	USART_init(UBRR_SETTING);
-	// Set Data Direction Register C [0|1|2| as input.
-    //DDRC &= ~((1<<DDC0) | (1<<DDC1) | (1<<DDC2));
 
 
-    
 
-
-    // Allocate 1 byte in memory/on heap for a representation (model)
-    // of the register and clear the contents directly, and update
-    // everything accordingly.
     srr_t *regmdl = malloc(sizeof(srr_t));
     clear(regmdl);
 
     srr_t last_model_state = *regmdl;
 
-    
-
-	
-	
-	
-	
-	
-	//funktion schrieben motors init
+	//funktion schreiben motors init
 
     // Set PD5 and PD6 as output (EN[A|B]!)
     DDRD |= (1 << DD5) | (1 << DD6);
@@ -133,24 +139,28 @@ int main(void) {
     // Set PB0, PB1, and PB3 as output (IN[2|3|4])
     DDRB |= (1 << DDB0) | (1 << DDB1) | (1 << DDB3);
 
-	unsigned char strbuff[sizeof(ADCMSG) + 15]; // WTF, why + 15? Oo
+	unsigned char strbuff[sizeof(ADCMSG) + 15]; 
 
 	uint16_t adcval0 = 0;
 	uint16_t adcval1 = 0;
 	uint16_t adcval2 = 0;
 
 	State CurrentState = FORWARD;
-	
-	//LED------
-	// Set Data Direction Register B5 as output.
-    //DDRB = (1<<DDB5);
     
     char right_on_line;
 	char middle_on_line;
 	char left_on_line;
+	char number_rounds = -1;
+    
+	setupTimer1();
 	
 	while(1) {
-        
+        if(middle_on_line && right_on_line && left_on_line){
+			number_rounds++;
+			if(number_rounds == 3){
+				stopmotors();
+				}
+			}
 		adcval0 = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW);
 		adcval1 = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW);
 		adcval2 = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW);
@@ -162,14 +172,12 @@ int main(void) {
 		switch(CurrentState){
 			case FORWARD: 
 				drivemiddle(&CurrentState);
-				if(right_on_line){
-				//USART_print("4 \n");
+				if(right_on_line && !middle_on_line){
 					CurrentState = SOFTRIGHT;
-					USART_print("SOFTRIGHT \n");
-				}else if(left_on_line){
-					//USART_print("5 \n");
+					//USART_print("SOFTRIGHT \n");
+				}else if(left_on_line && !middle_on_line){
 					CurrentState = SOFTLEFT;
-					USART_print("SOFTLEFT \n");
+					//USART_print("SOFTLEFT \n");
 				}
 				break;
 				
@@ -177,10 +185,12 @@ int main(void) {
 				drivelowleft();
 				if(!left_on_line && middle_on_line){
 					CurrentState = FORWARD;
-					USART_print("FORWARD \n");
+					//USART_print("FORWARD \n");
 				}else if(!middle_on_line && !left_on_line){
 					CurrentState = LEFT;
-					USART_print("LEFT \n");
+					//USART_print("LEFT \n");
+				}else if(middle_on_line && right_on_line){
+					CurrentState = RIGHT;
 					}
 				break;
 				
@@ -188,10 +198,12 @@ int main(void) {
 				drivelowright();
 				if(!right_on_line && middle_on_line){
 					CurrentState = FORWARD;
-						USART_print("FORWARD \n");
+					//USART_print("FORWARD \n");
 				}else if(!middle_on_line && !right_on_line){
 					CurrentState = RIGHT;
-					USART_print("RIGHT \n");
+					//USART_print("RIGHT \n");
+				}else if(middle_on_line && left_on_line){
+					CurrentState = LEFT;
 					}
 				break;
 				
@@ -199,19 +211,22 @@ int main(void) {
 				driveleft();
 				if(!left_on_line && middle_on_line){
 					CurrentState = FORWARD;
-					USART_print("FORWARD \n");
-				}
+					//USART_print("FORWARD \n");
+				}else if(middle_on_line && right_on_line){
+					CurrentState = RIGHT;
+					}
 				break;
 				
 			case RIGHT:
 				driveright();
 				if(!right_on_line && middle_on_line){
 					CurrentState = FORWARD;
-					USART_print("FORWARD \n");
-				}
+					//USART_print("FORWARD \n");
+				}else if(middle_on_line && left_on_line){
+					CurrentState = LEFT;
+					}
 				break;
 			}
-			
 		
 		update_model(regmdl, left_on_line, middle_on_line, right_on_line);
 
@@ -220,10 +235,6 @@ int main(void) {
 		   last_model_state = *regmdl;
 		}
 
-    
-	
-	
-		
 		//sprintf(strbuff, ADCMSG, adcval0, adcval1, adcval2);
 
 		//USART_print(strbuff);

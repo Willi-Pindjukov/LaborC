@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "iesusart.h"
 #include "iessreg.h"
-
+#include "iesultrasound.h"
 
 
 /**
@@ -55,7 +55,7 @@ void update_hardware(srr_t *regmdl) {
 void update_model(srr_t *regmdl, char left, char middle, char right) {
 
     if (right) {
-        *regmdl |= (1 << SR_LED_YELLOW);
+		*regmdl |= (1 << SR_LED_YELLOW);
     } else {
         *regmdl &= ~(1 << SR_LED_YELLOW);
     }

@@ -10,3 +10,6 @@
 #define VALUERIGHT 500;
 #define VALUEMIDDLE 600;
 #define VALUELEFT 500;
+
+#define F_CPU 16E6
+extern char time_elapse = 0;
