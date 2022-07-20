@@ -3,14 +3,11 @@
 #include <util/delay.h>
 #include <stdio.h>
 #include "iesusart.h"
+#include "iesultrasound.h"
 
 
-uint16_t cnt = 0;
-uint16_t echo_start = 0;
-uint16_t echo_end = 0;
-int16_t echo_duration = 0;
 
-ISR (PCINT0_vect) {
+/*ISR (PCINT0_vect) {
     if (PINB & (1 << ECHO)) {
         // JUST RISEN
         echo_start = cnt;
@@ -22,24 +19,28 @@ ISR (PCINT0_vect) {
         }
         echo_duration = cnt - echo_start;
     }
-}
+}*/
 
-ISR (TIMER2_COMPA_vect) {
+ISR (TIMER1_COMPA_vect) {
   cnt+=1;
 }
 
 void setupTimer1() {
-  cli();
-  TCCR1B |= (1 << CS10); // Prescaler: 1 => 16E6 ticks/second
-  TCCR1B |= (1 << WGM12); // Use Timer 1 in CTC-mode
-  TIMSK1 |= (1 << OCIE1A); // Enable compare-match-interrupt for OCR1A
-  OCR1A = 255;           // Every 16E6/255 ticks COMPA_vect is fired.
-                         // This equals an (non-existent) 512-clock-divisor.
-                         // We need this information for later calculations.
-                         // BTW: Keep in mind that there is one more OCR-register
-                         // for timer 1, which you can use to do some more neat
-                         // stuff.
-  sei();
+	cnt = 0;
+	echo_start = 0;
+	echo_end = 0;
+	echo_duration = 0;
+	  cli();
+	  TCCR1B |= (1 << CS10); // Prescaler: 1 => 16E6 ticks/second
+	  TCCR1B |= (1 << WGM12); // Use Timer 1 in CTC-mode
+	  TIMSK1 |= (1 << OCIE1A); // Enable compare-match-interrupt for OCR1A
+	  OCR1A = 255*49;           // Every 16E6/255 ticks COMPA_vect is fired.
+							 // This equals an (non-existent) 512-clock-divisor.
+							 // We need this information for later calculations.
+							 // BTW: Keep in mind that there is one more OCR-register
+							 // for timer 1, which you can use to do some more neat
+							 // stuff.
+	  sei();
 }
 
 void setupPCINTPB4() {

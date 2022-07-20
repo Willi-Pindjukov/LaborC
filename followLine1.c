@@ -78,7 +78,7 @@ void driveright(){
 	}
 
 void drivelowright(){
-	setDutyCicle(150,130);
+	setDutyCicle(130,110);
 	leftforward();
 	rightforward();
 	}
@@ -90,35 +90,36 @@ void driveleft(){
 	}
 	
 void drivelowleft(){
-	setDutyCicle(130,150);
+	setDutyCicle(110,130);
 	rightforward();
 	leftforward();
 	}
 
 
 
-ISR (TIMER1_COMPA_vect) {
+/*ISR (TIMER1_COMPA_vect) {
 	
 	if(cnt == 49){
 		time_elapse = 1;
 		cnt = 0;
 		}
 	cnt+=1;
-}
+}*/
+
 
 
 int main(void) {
-
+	
+	
+	
 	//Delete everything on ports B and D
     DDRD = 0;
     DDRB = 0;
-    
+   
 	ADC_init();
 	
 	setup_ddr_all();
 	USART_init(UBRR_SETTING);
-
-
 
     srr_t *regmdl = malloc(sizeof(srr_t));
     clear(regmdl);
@@ -135,7 +136,7 @@ int main(void) {
 
     // Make PWM work on PD[5|6]
     setupTimer0();
-
+	
     // Set PB0, PB1, and PB3 as output (IN[2|3|4])
     DDRB |= (1 << DDB0) | (1 << DDB1) | (1 << DDB3);
 
@@ -151,16 +152,23 @@ int main(void) {
 	char middle_on_line;
 	char left_on_line;
 	char number_rounds = -1;
-    
-	setupTimer1();
+    setupTimer1();
 	
 	while(1) {
+		/*if (!(UCSR0A & (1 << RXC0))) {
+			USART_receiveByte();
+		}    */
+		
         if(middle_on_line && right_on_line && left_on_line){
+			CurrentState = FORWARD;
 			number_rounds++;
 			if(number_rounds == 3){
 				stopmotors();
 				}
 			}
+			
+			
+			
 		adcval0 = ADC_read_avg(ADMUX_CHN_ADC0, ADC_AVG_WINDOW);
 		adcval1 = ADC_read_avg(ADMUX_CHN_ADC1, ADC_AVG_WINDOW);
 		adcval2 = ADC_read_avg(ADMUX_CHN_ADC2, ADC_AVG_WINDOW);
@@ -178,7 +186,11 @@ int main(void) {
 				}else if(left_on_line && !middle_on_line){
 					CurrentState = SOFTLEFT;
 					//USART_print("SOFTLEFT \n");
-				}
+				}else if(right_on_line && middle_on_line){
+					CurrentState = RIGHT;
+				}else if(left_on_line && middle_on_line){
+					CurrentState = LEFT;
+					}
 				break;
 				
 			case SOFTLEFT:
@@ -212,6 +224,8 @@ int main(void) {
 				if(!left_on_line && middle_on_line){
 					CurrentState = FORWARD;
 					//USART_print("FORWARD \n");
+				}else if(middle_on_line && left_on_line){
+					CurrentState = SOFTLEFT;
 				}else if(middle_on_line && right_on_line){
 					CurrentState = RIGHT;
 					}
@@ -222,6 +236,8 @@ int main(void) {
 				if(!right_on_line && middle_on_line){
 					CurrentState = FORWARD;
 					//USART_print("FORWARD \n");
+				}else if(middle_on_line && right_on_line){
+					CurrentState = SOFTRIGHT;
 				}else if(middle_on_line && left_on_line){
 					CurrentState = LEFT;
 					}
@@ -229,15 +245,17 @@ int main(void) {
 			}
 		
 		update_model(regmdl, left_on_line, middle_on_line, right_on_line);
-
+		
+		
+        
 		if (*regmdl != last_model_state) {
 		   update_hardware(regmdl);
 		   last_model_state = *regmdl;
 		}
 
-		//sprintf(strbuff, ADCMSG, adcval0, adcval1, adcval2);
+	//sprintf(strbuff, ADCMSG, adcval0, adcval1, adcval2);
 
-		//USART_print(strbuff);
+	//USART_print(strbuff);
 	}
 
 	return 0;

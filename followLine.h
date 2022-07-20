@@ -1,5 +1,8 @@
 
 
+#ifndef FOLLOWLINE_h
+#define FOLLOWLINE_h
+
 #define VALUE200 200;
 #define VALUE300 300;
 #define VALUE400 400;
@@ -12,4 +15,8 @@
 #define VALUELEFT 500;
 
 #define F_CPU 16E6
-extern char time_elapse = 0;
+//extern char time_elapse = 0;
+
+
+
+#endif

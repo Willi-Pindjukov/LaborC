@@ -15,8 +15,8 @@
             \/        \/                     \/     \/     \/ \/
 */
 
-#ifndef IESMOTORS
-#define IESMOTORS
+#ifndef IESMOTORS_h
+#define IESMOTORS_h
 // hae?
 #include <avr/io.h>
 #include <avr/interrupt.h>

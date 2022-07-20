@@ -1,5 +1,8 @@
 
 
+#ifndef IESSREG_h
+#define IESSREG_h
+
 // Robot function/peripheral RIGHT LF.
 #define DR_LF_R DDRC
 #define DP_LF_R DDC0
@@ -45,3 +48,4 @@ void setup_ddr_all();
 void update_model(srr_t *regmdl, char left, char middle, char right);
 void clear(srr_t *regmdl);
 void update_hardware(srr_t *regmdl);
+#endif
